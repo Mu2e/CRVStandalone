@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------
 # Setup the project
-cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(wls)
 
 #----------------------------------------------------------------------------
@@ -32,25 +32,26 @@ endif()
 #----------------------------------------------------------------------------
 # Locate sources and headers for this project
 #
+message(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/include 
-                    ${PROJECT_SOURCE_DIR}/../../inc
-                    ${PROJECT_SOURCE_DIR}/../../../
+                    ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/inc/
+                    ${PROJECT_SOURCE_DIR}/../../
                     ${Geant4_INCLUDE_DIR}
-#                    ${ROOT_INCLUDE_DIRS})
-                    ${ROOT_INCLUDE_DIR})
+                    ${ROOT_INCLUDE_DIRS})
+#                    ${ROOT_INCLUDE_DIR})
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc
-                  ${PROJECT_SOURCE_DIR}/../../src/MakeCrvPhotons.cc
-                  ${PROJECT_SOURCE_DIR}/../../src/MakeCrvSiPMCharges.cc
-                  ${PROJECT_SOURCE_DIR}/../../src/MakeCrvWaveforms.cc
-                  ${PROJECT_SOURCE_DIR}/../../src/MakeCrvDigis.cc
-                  ${PROJECT_SOURCE_DIR}/../../src/MakeCrvRecoPulses.cc
-                  ${PROJECT_SOURCE_DIR}/../../src/DrawLookupTableHistograms.cc)
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/src/MakeCrvPhotons.cc
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/src/MakeCrvSiPMCharges.cc
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/src/MakeCrvWaveforms.cc
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/src/MakeCrvDigis.cc
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/src/MakeCrvRecoPulses.cc
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/src/DrawLookupTableHistograms.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh
-                  ${PROJECT_SOURCE_DIR}/../../inc/MakeCrvPhotons.hh
-                  ${PROJECT_SOURCE_DIR}/../../inc/MakeCrvSiPMCharges.hh
-                  ${PROJECT_SOURCE_DIR}/../../inc/MakeCrvWaveforms.hh
-                  ${PROJECT_SOURCE_DIR}/../../inc/MakeCrvDigis.hh
-                  ${PROJECT_SOURCE_DIR}/../../inc/MakeCrvRecoPulses.hh)
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/inc/MakeCrvPhotons.hh
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/inc/MakeCrvSiPMCharges.hh
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/inc/MakeCrvWaveforms.hh
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/inc/MakeCrvDigis.hh
+                  ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/inc/MakeCrvRecoPulses.hh)
 
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
