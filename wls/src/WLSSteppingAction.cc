@@ -88,7 +88,10 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
       int trackID=theStep->GetTrack()->GetTrackID();
       int parentID=theStep->GetTrack()->GetParentID();
       _wlsTrackParents[trackID]=parentID;
-      if(_wlsTrackParents.find(parentID)==_wlsTrackParents.end()) _tracksGettingAbsorbedInFiber.insert(parentID);
+      if(_wlsTrackParents.find(parentID)==_wlsTrackParents.end()) _tracksGettingAbsorbedInFiber.insert(parentID);  //ignores photons whose parents were
+                                                                                                                   //also emitted in the fiber, i.e.
+                                                                                                                   //counts only "first absorptions"
+                                                                                                                   //in the fiber
     }
   }
 
@@ -96,7 +99,8 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
   G4VPhysicalVolume* thePostPV = theStep->GetPostStepPoint()->GetPhysicalVolume();
   if(thePostPV)
   {
-    if(theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()==0)
+    //PDG code for optical photons changed from 0 to -22
+    if(theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()==-22)
     {
       std::string currentVolume=thePostPV->GetName();
       std::string creationVolume=theStep->GetTrack()->GetLogicalVolumeAtVertex()->GetName();
@@ -117,7 +121,8 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
 */
 
 /*
-//    if(theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()!=0)
+    //PDG code for optical photons changed from 0 to -22
+//    if(theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()!=-22)
     {
       std::cout<<theStep->GetTrack()->GetTrackID()<<"  "<<theStep->GetTrack()->GetParentID()<<"   ";
       std::cout<<theStep->GetTrack()->GetParticleDefinition()->GetParticleName()<<"   ";
@@ -207,7 +212,8 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
       _crvPhotons->SetScintillationYield(scintillationYield);
     }
 
-    if(PDGcode!=0)  //ignore optical photons
+    //PDG code for optical photons changed from 0 to -22
+    if(PDGcode!=-22)  //ignore optical photons
     {
      int reflector = WLSDetectorConstruction::Instance()->GetReflectorOption();
       _crvPhotons->MakePhotons(p1, p2, t1, t2,  
@@ -252,7 +258,7 @@ void WLSSteppingAction::Reset()
 
 void WLSSteppingAction::PrintFiberStats()
 {
-  std::cout<<"Full GEANT4:    Tracks hitting fiber: "<<_tracksHittingFiber.size()<<"    Tracks getting absorbed in fiber: "<<_tracksGettingAbsorbedInFiber.size();
+  std::cout<<"Full GEANT4:  Tracks hitting fiber: "<<_tracksHittingFiber.size()<<"    Tracks getting absorbed in fiber: "<<_tracksGettingAbsorbedInFiber.size();
   std::cout<<"       Photons detected which have not been wavelength shifted in fiber: "<<_zeroFiberEmissions<<std::endl;
 }
 

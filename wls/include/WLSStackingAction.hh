@@ -36,7 +36,8 @@ class WLSStackingAction : public G4UserStackingAction
     static  WLSStackingAction* Instance() {return _fgInstance;}
     virtual G4ClassificationOfNewTrack ClassifyNewTrack(const G4Track* track)
     {
-      if(track->GetDefinition()->GetPDGEncoding()==0 && track->GetVolume() && track->GetCreatorProcess())
+      //PDG code for optical photons changed from 0 to -22
+      if(track->GetDefinition()->GetPDGEncoding()==-22 && track->GetVolume() && track->GetCreatorProcess())
       {
         std::string v=track->GetVolume()->GetName();
         std::string p=track->GetCreatorProcess()->GetProcessName();
