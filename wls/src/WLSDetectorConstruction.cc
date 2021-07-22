@@ -49,23 +49,37 @@ WLSDetectorConstruction::WLSDetectorConstruction(double lengthOption, int reflec
   _fiberGuideBarReflectivity = 0.00;
 
   _barLength        = lengthOption*mm;
-#define TESTBEAM
-#ifndef TESTBEAM
-  _barThickness     = 19.78*mm;
-  _barWidth         = 51.34*mm;
-#else
-#pragma message "USING TESTBEAM"
+//#define TESTBEAM
+#define LDMX
+#if defined(TESTBEAM)
+#pragma message "USING TESTBEAM for bar thickness/width"
   _barThickness     = 19.8*mm;
   _barWidth         = 49.4*mm;
+#elif defined(LDMX)
+#pragma message "USING LDMX for bar thickness/width"
+  _barThickness     = 20.0*mm;  //FIXME
+  _barWidth         = 50.0*mm;  //FIXME
+#else
+  _barThickness     = 19.78*mm;
+  _barWidth         = 51.34*mm;
 #endif
   _fiberSeparation  = 2.6*cm;
   _holeRadiusX      = 2.00*mm;
   _holeRadiusY      = 1.00*mm;
   _coatingThickness = 0.25*mm;
   _extrusionCornerRadius = 2.00*mm;
+#if defined(LDMX)
+#pragma message "USING LDMX for fiber dimensions"
+  //check whether the cladding is 2% or 3% of the diameter
+  _fiberRadius      = 0.90*mm - 0.054*mm - 0.054*mm;
+  _clad1Radius      = 0.90*mm - 0.054*mm;
+  _clad2Radius      = 0.90*mm;
+#else
+  //check whether the cladding is 2% or 3% of the diameter
   _fiberRadius      = 0.70*mm - 0.042*mm - 0.042*mm;
   _clad1Radius      = 0.70*mm - 0.042*mm;
   _clad2Radius      = 0.70*mm;
+#endif
   _fiberGuideBarLength = 1.0*cm;
   _sipmLength       = 0.2*mm;
   _sipmWidth        = 2.0*mm;
@@ -86,13 +100,17 @@ WLSDetectorConstruction::WLSDetectorConstruction(double lengthOption, int reflec
   _reflectorAtNegativeSide = (reflectorOption<=-1?true:false);
 
 //use only the positive values of x (assuming symmetry) (0 is at the center)
-#ifndef TESTBEAM
-  double xbinsTmp[11] = {0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 6.0, 9.0, 9.5, 9.89};
-  double ybinsTmp[42] = {-25.67, -25.2, -24.7, -23.5, -20.5, -17.5, -15.5, -15.0, -14.5, -14.0, -13.5, -13.0, -12.5, -12.0, -11.5, -11.0, -10.5, -8.5, -6.5, -4.5, -1.5, 1.5, 4.5, 6.5, 8.5, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 17.5, 20.5, 23.5, 24.7, 25.2, 25.67}; 
-#else
-#pragma message "USING TESTBEAM"
+#if defined(TESTBEAM)
+#pragma message "USING TESTBEAM for bar grid dimensions"
   double xbinsTmp[11] = {0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 6.0, 9.0, 9.5, 9.9};
   double ybinsTmp[42] = {-24.7, -24.25, -23.75, -22.5, -20.5, -17.5, -15.5, -15.0, -14.5, -14.0, -13.5, -13.0, -12.5, -12.0, -11.5, -11.0, -10.5, -8.5, -6.5, -4.5, -1.5, 1.5, 4.5, 6.5, 8.5, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 17.5, 20.5, 22.5, 23.75, 24.25, 24.7};
+#elif defined(LDMX)
+#pragma message "USING LDMX for bar grid dimensions"
+  double xbinsTmp[11] = {0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 6.0, 9.0, 9.5, 10.0};
+  double ybinsTmp[42] = {-25.5, -25.2, -24.7, -23.5, -20.5, -17.5, -15.5, -15.0, -14.5, -14.0, -13.5, -13.0, -12.5, -12.0, -11.5, -11.0, -10.5, -8.5, -6.5, -4.5, -1.5, 1.5, 4.5, 6.5, 8.5, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 17.5, 20.5, 23.5, 24.7, 25.2, 25.5}; 
+#else
+  double xbinsTmp[11] = {0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 6.0, 9.0, 9.5, 9.89};
+  double ybinsTmp[42] = {-25.67, -25.2, -24.7, -23.5, -20.5, -17.5, -15.5, -15.0, -14.5, -14.0, -13.5, -13.0, -12.5, -12.0, -11.5, -11.0, -10.5, -8.5, -6.5, -4.5, -1.5, 1.5, 4.5, 6.5, 8.5, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 17.5, 20.5, 23.5, 24.7, 25.2, 25.67}; 
 #endif
 
   for(int i=0; i<11; i++) _xbins.push_back(xbinsTmp[i]*mm); //10 bins
@@ -191,6 +209,16 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
                                                           _holeRadiusY,
                                                           _barLength/2.0);
 
+#if defined(LDMX)
+#pragma message "USING LDMX for scintillator hole"
+  G4SubtractionSolid * solidScintillator1Hole = new G4SubtractionSolid("Scintillator1Hole", 
+                                                                        solidScintillator4Corner, solidScintillatorHole, NULL, 
+                                                                        G4ThreeVector(0.0, 0.0, 0.0));
+
+  G4LogicalVolume* logicScintillator = new G4LogicalVolume(solidScintillator1Hole,
+                                                           FindMaterial("PolystyreneScint"),
+                                                           "Scintillator");
+#else
   G4SubtractionSolid * solidScintillator1Hole = new G4SubtractionSolid("Scintillator1Hole", 
                                                                         solidScintillator4Corner, solidScintillatorHole, NULL, 
                                                                         G4ThreeVector(0.0, -_fiberSeparation/2.0, 0.0));
@@ -201,6 +229,7 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
   G4LogicalVolume* logicScintillator = new G4LogicalVolume(solidScintillator2Hole,
                                                            FindMaterial("PolystyreneScint"),
                                                            "Scintillator");
+#endif
 
   _physiScintillator = new G4PVPlacement(0,
                                          G4ThreeVector(),
@@ -297,6 +326,16 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
 
   G4VSolid* solidFiberGuideBarHole = new G4Tubs("FiberGuideBarHole",0.,_clad2Radius,_fiberGuideBarLength/2.0,0.0*rad,twopi*rad);
 
+#if defined(LDMX)
+#pragma message "USING LDMX for fiber guide bar holes"
+  G4SubtractionSolid * solidFiberGuideBar1Hole = new G4SubtractionSolid("FiberGuideBar1Hole", 
+                                                                        solidFiberGuideBarBase, solidFiberGuideBarHole, NULL, 
+                                                                        G4ThreeVector(0.0, 0.0, 0.0));
+
+  G4LogicalVolume* logicFiberGuideBar =  new G4LogicalVolume(solidFiberGuideBar1Hole,
+                                                             FindMaterial("G4_POLYVINYL_CHLORIDE"),
+                                                             "FiberGuideBar");
+#else
   G4SubtractionSolid * solidFiberGuideBar1Hole = new G4SubtractionSolid("FiberGuideBar1Hole", 
                                                                         solidFiberGuideBarBase, solidFiberGuideBarHole, NULL, 
                                                                         G4ThreeVector(0.0, -_fiberSeparation/2.0, 0.0));
@@ -307,6 +346,7 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
   G4LogicalVolume* logicFiberGuideBar =  new G4LogicalVolume(solidFiberGuideBar2Hole,
                                                              FindMaterial("G4_POLYVINYL_CHLORIDE"),
                                                              "FiberGuideBar");
+#endif
 
   G4VPhysicalVolume *physiFiberGuideBar0=
   new G4PVPlacement(0,G4ThreeVector(0.0, 0.0,-_barLength/2.0-_fiberGuideBarLength/2.0),
@@ -360,6 +400,19 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
                                                      FindMaterial("FPethylene"),
                                                      "Clad2");
 
+#if defined(LDMX)
+#pragma message "USING LDMX for fiber clad2"
+  G4VPhysicalVolume *physiClad2Hole0=
+  new G4PVPlacement(0,
+                    G4ThreeVector(0.0, 0.0, 0.0),
+                    logicClad2,
+                    "Clad2Hole0",
+                    logicWorld,
+                    false,
+                    0);
+
+  physiClad2Hole0->CheckOverlaps();
+#else
   G4VPhysicalVolume *physiClad2Hole0=
   new G4PVPlacement(0,
                     G4ThreeVector(0.0, -_fiberSeparation/2.0, 0.0),
@@ -379,6 +432,7 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
 
   physiClad2Hole0->CheckOverlaps();
   physiClad2Hole1->CheckOverlaps();
+#endif
 
   //--------------------------------------------------
   // Cladding 1
@@ -447,6 +501,23 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
   //Reflector
   G4LogicalVolume* logicReflector = new G4LogicalVolume(solidSiPMorReflector, FindMaterial("G4_Al"), "Reflector");
 
+#if defined(LDMX)
+#pragma message "USING LDMX for SiPMs/reflectors"
+  new G4PVPlacement(0,
+                    G4ThreeVector(0.0, 0.0, -_barLength/2.0-_fiberGuideBarLength-_airGap-_sipmLength/2.0),
+                    _reflectorAtNegativeSide?logicReflector:logicPhotonDet[0],
+                    _reflectorAtNegativeSide?"Reflector":"SiPM",
+                    logicWorld,
+                    false,
+                    0);
+  new G4PVPlacement(0,
+                    G4ThreeVector(0.0, 0.0, _barLength/2.0+_fiberGuideBarLength+_airGap+_sipmLength/2.0),
+                    _reflectorAtPositiveSide?logicReflector:logicPhotonDet[1],
+                    _reflectorAtPositiveSide?"Reflector":"SiPM",
+                    logicWorld,
+                    false,
+                    1);
+#else
   new G4PVPlacement(0,
                     G4ThreeVector(0.0, -_fiberSeparation/2.0, -_barLength/2.0-_fiberGuideBarLength-_airGap-_sipmLength/2.0),
                     _reflectorAtNegativeSide?logicReflector:logicPhotonDet[0],
@@ -475,6 +546,7 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
                     logicWorld,
                     false,
                     3);
+#endif
 
   // PhotonDet Surface Properties
   G4OpticalSurface* PhotonDetSurface = new G4OpticalSurface("PhotonDetSurface",
@@ -548,8 +620,12 @@ G4VPhysicalVolume* WLSDetectorConstruction::ConstructDetector()
   new G4LogicalBorderSurface("FiberEndSurface4",_physiWorld,physiClad1,FiberEndSurface);
   new G4LogicalBorderSurface("FiberEndSurface5",physiClad2Hole0,_physiWorld,FiberEndSurface);
   new G4LogicalBorderSurface("FiberEndSurface6",_physiWorld,physiClad2Hole0,FiberEndSurface);
+#ifdef LDMX
+#pragma message "USING LDMX for fiber hole surfaces"
+#else
   new G4LogicalBorderSurface("FiberEndSurface7",physiClad2Hole1,_physiWorld,FiberEndSurface);
   new G4LogicalBorderSurface("FiberEndSurface8",_physiWorld,physiClad2Hole1,FiberEndSurface);
+#endif
 
   //--------------------------------------------------
   // End of Construction
