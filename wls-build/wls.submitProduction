@@ -37,21 +37,21 @@ do
 
     echo "Length "$length" Reflector "$reflector
 
-    mkdir /pnfs/mu2e/scratch/outstage/ehrlich/tables_6.5/$length'_'$reflector
+    mkdir /pnfs/mu2e/scratch/outstage/ehrlich/tables_7.1/$length'_'$reflector
 
     jobsub_submit \
-    -N $((2000*3)) \
+    -N $((1000*3)) \
     -e LENGTH=$length \
     -e REFLECTOR=$reflector \
-    --memory=500MB \
-    --disk=10MB \
-    --expected-lifetime=48h \
-    --resource-provides usage_model=OPPORTUNISTIC,DEDICATED \
+    --memory=1000MB \
+    --disk=100MB \
+    --expected-lifetime=12h \
+    --resource-provides usage_model=OPPORTUNISTIC,DEDICATED,OFFSITE \
+    --blacklist=Clemson,US_FermiGrid,FermiGrid,FNAL,fnal,Fnal \
     --group=mu2e \
     -f dropbox:///mu2e/app/users/ehrlich/work_MDC2018/Offline/CRVResponse/standalone/wls-build/wlsProduction \
     -f dropbox:///mu2e/app/users/ehrlich/work_MDC2018/Offline/CRVResponse/standalone/wls-build/singlePEWaveform_v3.txt \
     -f dropbox:///mu2e/app/users/ehrlich/work_MDC2018/Offline/CRVResponse/standalone/wls-build/photonMap.root \
-    -f dropbox:///mu2e/app/users/ehrlich/work_MDC2018/Offline/CRVResponse/standalone/wls-build/visibleEnergyAdjustment.txt \
     file:///mu2e/app/users/ehrlich/work_MDC2018/Offline/CRVResponse/standalone/wls-build/wls.doProduction
 
   done
