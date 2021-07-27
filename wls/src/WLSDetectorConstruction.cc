@@ -55,15 +55,17 @@ WLSDetectorConstruction::WLSDetectorConstruction(double lengthOption, int reflec
 #pragma message "USING TESTBEAM for bar thickness/width"
   _barThickness     = 19.8*mm;
   _barWidth         = 49.4*mm;
+  _fiberSeparation  = 2.6*cm;
 #elif defined(LDMX)
 #pragma message "USING LDMX for bar thickness/width"
   _barThickness     = 20.0*mm;  //FIXME
   _barWidth         = 50.0*mm;  //FIXME
+  _fiberSeparation  = 0.0*cm;   //this value is used in MakeCrvPhotons, and sets the fiber hole into the center
 #else
   _barThickness     = 19.78*mm;
   _barWidth         = 51.34*mm;
-#endif
   _fiberSeparation  = 2.6*cm;
+#endif
   _holeRadiusX      = 2.00*mm;
   _holeRadiusY      = 1.00*mm;
   _coatingThickness = 0.25*mm;

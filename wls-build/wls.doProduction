@@ -18,7 +18,7 @@ if [ $SIMTYPE -ge 2 ]; then
 fi
 
 # copy and run executable
-REMOTE_DIR_INPUT=/pnfs/mu2e/scratch/outstage/ehrlich/tables_7.1/
+REMOTE_DIR_INPUT=/pnfs/mu2e/scratch/outstage/ehrlich/tables_7.2/
 ifdh cp $REMOTE_DIR_INPUT/wlsProduction wlsProduction 
 ifdh cp $REMOTE_DIR_INPUT/singlePEWaveform_v3.txt singlePEWaveform_v3.txt 
 ifdh cp $REMOTE_DIR_INPUT/photonMap.root photonMap.root 
@@ -28,12 +28,12 @@ chmod 777 wlsProduction
 # copy lookup table
 printf -v MINBINTMP "%06d\n" $MINBIN
 OUTFILE=LookupTable'_'$SIMTYPE'_'$MINBINTMP
-ifdh cp $OUTFILE /pnfs/mu2e/scratch/outstage/ehrlich/tables_7.1/$LENGTH'_'$REFLECTOR/$OUTFILE
+ifdh cp $OUTFILE /pnfs/mu2e/scratch/outstage/ehrlich/tables_7.2/$LENGTH'_'$REFLECTOR/$OUTFILE
 
 # create log file
 LOGFILE=`printf "log_%010d_%05d.log" $CLUSTER $PROCESS`
 cat jsb_tmp/JOBSUB_LOG_FILE >> $LOGFILE
 echo "=========== error log file ==========" >> $LOGFILE
 cat jsb_tmp/JOBSUB_ERR_FILE >> $LOGFILE
-ifdh cp $LOGFILE /pnfs/mu2e/scratch/outstage/ehrlich/tables_7.1/log/$LOGFILE
+ifdh cp $LOGFILE /pnfs/mu2e/scratch/outstage/ehrlich/tables_7.2/log/$LOGFILE
 
