@@ -95,7 +95,7 @@ void DrawHistograms(const std::string &lookupFilename)
   CLHEP::RandGaussQ randGausQ(engine);
   CLHEP::RandPoissonQ randPoissonQ(engine);
   crvPhotons = std::unique_ptr<mu2eCrv::MakeCrvPhotons>(new mu2eCrv::MakeCrvPhotons(randFlat, randGausQ, randPoissonQ));
-  crvPhotons->LoadLookupTable(lookupFilename);
+  crvPhotons->LoadLookupTable(lookupFilename,1);
   crvPhotons->DrawHistograms();
 }
 

@@ -318,7 +318,7 @@ void WLSEventAction::Draw(const G4Event* evt)
   probabilities._trapType0Lifetime = 5;
   probabilities._trapType1Lifetime = 50;
   probabilities._thermalRate = 3.0e-4;   
-  probabilities._crossTalkProb = 0.09;  //at 2017 test beam
+  probabilities._crossTalkProb = 0.05;
 
   int nPixelsX=40;
   int nPixelsY=40;
@@ -347,7 +347,7 @@ void WLSEventAction::Draw(const G4Event* evt)
   double noise = 4.0e-4;
   double pedestal = 100; //ADC
   double ADCconversionFactor = 2300; //ADC/V
-  double calibrationFactor = 391.2; //ADC*ns/PE
+  double calibrationFactor = 394.6; //ADC*ns/PE
   double calibrationFactorPulseHeight = 11.4; //ADC/PE
   makeCrvWaveform.LoadSinglePEWaveform(_singlePEWaveformFilename.c_str(),
                                        singlePEWaveformPrecision, singlePEWaveformStretchFactor,
@@ -358,10 +358,11 @@ void WLSEventAction::Draw(const G4Event* evt)
   boost::shared_ptr<mu2eCrv::MakeCrvRecoPulses> makeRecoPulses[4];
 
   double startTimeGlobal=G4UniformRand()*digitizationInterval;  //cannot be negative
-  std::vector<double> siPMtimes[4], siPMcharges[4], siPMchargesInPEs[4];
+  std::vector<std::pair<double, double> > siPMtimesAndCharges[4];
+  std::vector<double> siPMchargesInPEs[4];
   std::vector<double> waveform[4], waveform2[4];
-  std::vector<unsigned int> ADCs[4], ADCs2[4];
-  unsigned int TDC, TDC2;
+  std::vector<int16_t> ADCs[4], ADCs2[4];
+  unsigned int TDC[4], TDC2[4];
   for(int SiPM=0; SiPM<4; SiPM++)
   {
     std::vector<std::pair<double, size_t> > photonTimes;
@@ -383,8 +384,7 @@ void WLSEventAction::Draw(const G4Event* evt)
     double firstTime=NAN;
     for(size_t i=0; i<SiPMresponseVector.size(); i++)
     {
-      siPMtimes[SiPM].push_back(SiPMresponseVector[i]._time);
-      siPMcharges[SiPM].push_back(SiPMresponseVector[i]._charge);
+      siPMtimesAndCharges[SiPM].emplace_back(SiPMresponseVector[i]._time, SiPMresponseVector[i]._charge);
       siPMchargesInPEs[SiPM].push_back(SiPMresponseVector[i]._chargeInPEs);
       PEs+=SiPMresponseVector[i]._chargeInPEs;
       if(isnan(firstTime) || firstTime>SiPMresponseVector[i]._time) firstTime=SiPMresponseVector[i]._time;
@@ -394,20 +394,21 @@ void WLSEventAction::Draw(const G4Event* evt)
     double startTime=startTimeGlobal;
     if(firstTime<startTime) startTime=firstTime*G4UniformRand();  //earliest charge cannot be before start time
 
-    makeCrvWaveform.MakeWaveform(siPMtimes[SiPM], siPMcharges[SiPM], waveform[SiPM], startTime, digitizationInterval);
-    makeCrvWaveform.MakeWaveform(siPMtimes[SiPM], siPMcharges[SiPM], waveform2[SiPM], startTime, digitizationInterval2);
+    makeCrvWaveform.MakeWaveform(siPMtimesAndCharges[SiPM], waveform[SiPM], startTime, digitizationInterval);
+    makeCrvWaveform.MakeWaveform(siPMtimesAndCharges[SiPM], waveform2[SiPM], startTime, digitizationInterval2);
 
     makeCrvWaveform.AddElectronicNoise(waveform[SiPM], noise, randGaussQ);
     makeCrvWaveform.AddElectronicNoise(waveform2[SiPM], noise, randGaussQ);
 
     makeCrvDigis.SetWaveform(waveform[SiPM], ADCconversionFactor, pedestal, startTime, digitizationInterval);
     ADCs[SiPM] = makeCrvDigis.GetADCs();
-    TDC = makeCrvDigis.GetTDC();
+    TDC[SiPM] = makeCrvDigis.GetTDC();
     makeCrvDigis.SetWaveform(waveform2[SiPM], ADCconversionFactor, pedestal, startTime, digitizationInterval2);
     ADCs2[SiPM] = makeCrvDigis.GetADCs();
-    TDC2 = makeCrvDigis.GetTDC();
+//    TDC2[SiPM] = makeCrvDigis.GetTDC();
+    TDC2[SiPM] = lrint((TDC[SiPM]*digitizationInterval)/digitizationInterval2);
 
-    float minADCdifference=5;
+    float minADCdifference=5;   //in Offline: 40
     float defaultBeta=19.0;
     float minBeta=5.0;
     float maxBeta=40.0;
@@ -415,13 +416,15 @@ void WLSEventAction::Draw(const G4Event* evt)
     float minPulseHeightRatio=0.7;
     float maxPulseHeightRatio=1.5;
     float LEtimeFactor=0.985;
-    bool  allowDoubleGumbel=false;
-    float doubleGumbelThreshold=2.0;
+    float pulseThreshold=0.5;
+    float pulseAreaThreshold=5;
+    float doublePulseSeparation=0.25;
     makeRecoPulses[SiPM]=boost::shared_ptr<mu2eCrv::MakeCrvRecoPulses>(new mu2eCrv::MakeCrvRecoPulses(minADCdifference, defaultBeta, minBeta, maxBeta,
                                                                                                       maxTimeDifference, minPulseHeightRatio, 
                                                                                                       maxPulseHeightRatio, LEtimeFactor,
-                                                                                                      allowDoubleGumbel, doubleGumbelThreshold));
-    makeRecoPulses[SiPM]->SetWaveform(ADCs[SiPM], TDC, digitizationInterval, pedestal, calibrationFactor, calibrationFactorPulseHeight);
+                                                                                                      pulseThreshold, pulseAreaThreshold, doublePulseSeparation));
+    std::vector<unsigned int> ADCsTmp(ADCs[SiPM].begin(),ADCs[SiPM].end());  //FIXME
+    makeRecoPulses[SiPM]->SetWaveform(ADCsTmp, TDC[SiPM], digitizationInterval, pedestal, calibrationFactor, calibrationFactorPulseHeight);
     if(makeRecoPulses[SiPM]->GetPEs().size()>0) 
     {
       double pulseHeight=0;
@@ -523,9 +526,9 @@ void WLSEventAction::Draw(const G4Event* evt)
     double scaleSiPMResponse = 1.0;
     double totalPEs=0;
     histSiPMResponse[SiPM]=new TH1D((s2.str()+"SiPMResponse").c_str(),"",100,0,maxTime);
-    for(unsigned int j=0; j<siPMtimes[SiPM].size(); j++)
+    for(unsigned int j=0; j<siPMtimesAndCharges[SiPM].size(); j++)
     {
-      histSiPMResponse[SiPM]->Fill(siPMtimes[SiPM][j], siPMchargesInPEs[SiPM][j]*scaleSiPMResponse);
+      histSiPMResponse[SiPM]->Fill(siPMtimesAndCharges[SiPM][j].first, siPMchargesInPEs[SiPM][j]*scaleSiPMResponse);
       totalPEs+=siPMchargesInPEs[SiPM][j];
     }
     histSiPMResponse[SiPM]->SetLineColor(kOrange-6);
@@ -541,7 +544,7 @@ void WLSEventAction::Draw(const G4Event* evt)
     double scale = histMax/waveformMax;
     for(unsigned int j=0; j<n2; j++)
     {
-      t2[j]=(TDC2+j)*digitizationInterval2;
+      t2[j]=(TDC2[SiPM]+j)*digitizationInterval2;
       v2[j]=ADCs2[SiPM][j];
       v2[j]*=scale;
     }
@@ -561,7 +564,7 @@ void WLSEventAction::Draw(const G4Event* evt)
     double *v = new double[n];
     for(unsigned int j=0; j<n; j++)
     {
-      t[j]=(TDC+j)*digitizationInterval;
+      t[j]=(TDC[SiPM]+j)*digitizationInterval;
       v[j]=ADCs[SiPM][j];
       v[j]*=scale;
     }
@@ -711,6 +714,7 @@ void WLSEventAction::Draw(const G4Event* evt)
     c3.cd(SiPM+1);
     gPad->SetLogy();
     _histPE[SiPM]->Draw();
+    _histPE[SiPM]->SaveAs(Form("PEs%i.root",SiPM));
   }      
   c3.SaveAs("PEs.C");
 }

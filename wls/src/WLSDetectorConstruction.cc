@@ -50,7 +50,7 @@ WLSDetectorConstruction::WLSDetectorConstruction(double lengthOption, int reflec
 
   _barLength        = lengthOption*mm;
 //#define TESTBEAM
-#define LDMX
+//#define LDMX
 #if defined(TESTBEAM)
 #pragma message "USING TESTBEAM for bar thickness/width"
   _barThickness     = 19.8*mm;
@@ -60,6 +60,10 @@ WLSDetectorConstruction::WLSDetectorConstruction(double lengthOption, int reflec
 #pragma message "USING LDMX for bar thickness/width"
   _barThickness     = 20.0*mm;  //FIXME
   _barWidth         = 50.0*mm;  //FIXME
+//#pragma message "USING LDMX for bar thickness/width with 6cm"
+//#pragma message "USING LDMX for bar thickness/width with 6cm"
+//#pragma message "USING LDMX for bar thickness/width with 6cm"
+//  _barWidth         = 60.0*mm;  //FIXME
   _fiberSeparation  = 0.0*cm;   //this value is used in MakeCrvPhotons, and sets the fiber hole into the center
 #else
   _barThickness     = 19.78*mm;

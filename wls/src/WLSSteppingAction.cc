@@ -44,7 +44,7 @@ WLSSteppingAction::WLSSteppingAction(simulationMode mode, const std::string &loo
   if(_mode==UseGeantAndLookupTables)
   {
     _crvPhotons = std::unique_ptr<mu2eCrv::MakeCrvPhotons>(new mu2eCrv::MakeCrvPhotons(_randFlat, _randGaussQ, _randPoissonQ));
-    _crvPhotons->LoadLookupTable(lookupFileName);
+    _crvPhotons->LoadLookupTable(lookupFileName,1);
   }
 
 #ifdef PHOTONTEST

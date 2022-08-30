@@ -594,7 +594,8 @@ void WLSMaterials::CreateMaterials()
   MPTPolystyrene->AddProperty("FASTCOMPONENT",PhotonEnergyEmissionPPO,EmissionPPO,nEntriesEmissionPPO);
   MPTPolystyrene->AddConstProperty("FASTTIMECONSTANT", 1.36*ns);  //PPO in cyclohexane (Boens et al.)
   MPTPolystyrene->AddConstProperty("FASTSCINTILLATIONRISETIME", 1.0*ns);  //exact value not know, but the rise time of PS based scintillators tend to be around 1ns
-  MPTPolystyrene->AddConstProperty("SCINTILLATIONYIELD",35900./MeV); //to match the testbeam number of PEs
+//  MPTPolystyrene->AddConstProperty("SCINTILLATIONYIELD",35900./MeV); //to match the testbeam number of PEs
+  MPTPolystyrene->AddConstProperty("SCINTILLATIONYIELD",25000./MeV); //to match the testbeam number of PEs
   MPTPolystyrene->AddConstProperty("RESOLUTIONSCALE",1.0);
   MPTPolystyrene->AddConstProperty("YIELDRATIO", 1.0);  //100% fast component 
 
