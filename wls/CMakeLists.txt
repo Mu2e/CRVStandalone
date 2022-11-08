@@ -37,6 +37,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include
                     ${PROJECT_SOURCE_DIR}/../../Offline/CRVResponse/inc/
                     ${PROJECT_SOURCE_DIR}/../../
                     ${Geant4_INCLUDE_DIR}
+                    ${CANVAS_INC}
                     ${ROOT_INCLUDE_DIRS})
 #                    ${ROOT_INCLUDE_DIR})
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc
@@ -57,5 +58,9 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh
 # Add the executable, and link it to the Geant4 libraries
 #
 add_executable(wls wls.cc ${sources} ${headers})
-target_link_libraries(wls ${Geant4_LIBRARIES} ${ROOT_LIBRARIES} )
+target_link_libraries(wls ${Geant4_LIBRARIES} ${CANVAS_LIB} ${ROOT_LIBRARIES} )
 
+#----------------------------------------------------------------------------
+# Add a macro that are visible in Offline
+#
+add_definitions(-DCRVStandalone)

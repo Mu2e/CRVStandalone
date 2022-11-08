@@ -1,7 +1,3 @@
-#ifndef WIN32
-#include <unistd.h>
-#endif
-
 #include "G4RunManager.hh"
 #include "G4UImanager.hh"
 

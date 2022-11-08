@@ -172,6 +172,7 @@ void WLSEventAction::EndOfEventAction(const G4Event* evt)
       arrivingPhotons++; //only count photons for which the arrival time and number of fiber emissions 
                          //can be stored in the histograms
     }
+    std::cout<<"Arriving Photons: "<<arrivingPhotons<<std::endl;
 
     if(arrivingPhotons>0)
     {

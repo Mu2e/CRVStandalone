@@ -1,12 +1,22 @@
-#! /bin/bash
+#!/bin/bash 
 
+date
 hostname
-printenv
+lsb_release -a
 
-source /cvmfs/mu2e.opensciencegrid.org/setupmu2e-art.sh
-source /cvmfs/mu2e.opensciencegrid.org/Offline/v10_00_00/SLF7/prof/Offline/setup.sh
+#setup environment
+source /cvmfs/fermilab.opensciencegrid.org/products/common/etc/setups.sh
+setup mu2e
+setup muse
+muse setup
+setup mu2egrid v6_09_00
+ups active
 
 setup ifdhc
+
+# to prevent wasting time trying to copy non-existing stage 1 files
+export IFDH_GRIDFTP_EXTRA="-st 100"
+export IFDH_CP_MAXRETRIES=0
 
 # set variables
 SIMTYPE=$(($PROCESS/1000))
@@ -18,7 +28,7 @@ if [ $SIMTYPE -ge 2 ]; then
 fi
 
 # copy and run executable
-REMOTE_DIR_INPUT=/pnfs/mu2e/scratch/outstage/ehrlich/tables_7.2/
+REMOTE_DIR_INPUT=/pnfs/mu2e/scratch/outstage/ehrlich/LDMXlookupTables
 ifdh cp $REMOTE_DIR_INPUT/wlsProduction wlsProduction 
 ifdh cp $REMOTE_DIR_INPUT/singlePEWaveform_v3.txt singlePEWaveform_v3.txt 
 ifdh cp $REMOTE_DIR_INPUT/photonMap.root photonMap.root 
@@ -28,12 +38,12 @@ chmod 777 wlsProduction
 # copy lookup table
 printf -v MINBINTMP "%06d\n" $MINBIN
 OUTFILE=LookupTable'_'$SIMTYPE'_'$MINBINTMP
-ifdh cp $OUTFILE /pnfs/mu2e/scratch/outstage/ehrlich/tables_7.2/$LENGTH'_'$REFLECTOR/$OUTFILE
+ifdh cp $OUTFILE /pnfs/mu2e/scratch/outstage/ehrlich/LDMXlookupTables/$LENGTH'_'$REFLECTOR/$OUTFILE
 
 # create log file
 LOGFILE=`printf "log_%010d_%05d.log" $CLUSTER $PROCESS`
 cat jsb_tmp/JOBSUB_LOG_FILE >> $LOGFILE
 echo "=========== error log file ==========" >> $LOGFILE
 cat jsb_tmp/JOBSUB_ERR_FILE >> $LOGFILE
-ifdh cp $LOGFILE /pnfs/mu2e/scratch/outstage/ehrlich/tables_7.2/log/$LOGFILE
+ifdh cp $LOGFILE /pnfs/mu2e/scratch/outstage/ehrlich/LDMXlookupTables/log/$LOGFILE
 

@@ -43,8 +43,8 @@ do
     -N $((1000*3)) \
     -e LENGTH=$length \
     -e REFLECTOR=$reflector \
-    --memory=1000MB \
-    --disk=100MB \
+    --memory=500MB \
+    --disk=50MB \
     --expected-lifetime=12h \
     --resource-provides usage_model=OPPORTUNISTIC,DEDICATED,OFFSITE \
     --blacklist=Clemson,US_FermiGrid,FermiGrid,FNAL,fnal,Fnal \
