@@ -1,0 +1,51 @@
+#!/bin/bash
+
+#for length in "2000" "1800" "1600" "1400" "1200" "600" 
+for length in "600" 
+do
+  declare -a reflectors=("0")
+  if [ $length == "1800" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "1600" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "1400" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "1200" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "600" ]; then
+    reflectors[0]="2"
+  fi
+
+  for reflector in "${reflectors[@]}"
+  do
+
+    echo "Length "$length" Reflector "$reflector
+
+    S0=/pnfs/mu2e/scratch/outstage/ehrlich/LDMXlookupTables/$length'_'$reflector/
+    S1=LookupTable'_'$length'_'$reflector
+
+    rm $S1
+
+    for PROCESS in {0..2999}   #1000*3-1
+    do
+      SIMTYPE=$(($PROCESS/1000))
+      MINBIN=$(($PROCESS%1000*200))
+
+      printf -v MINBINTMP "%06d\n" $MINBIN
+      S2=$S0/LookupTable'_'$SIMTYPE'_'$MINBINTMP
+
+      ls -l $S2
+
+      cat $S2 >> $S1
+    done
+
+    mv $S1 /pnfs/mu2e/scratch/outstage/ehrlich/LDMXlookupTables/.
+
+  done
+
+done
+echo "DONE!"

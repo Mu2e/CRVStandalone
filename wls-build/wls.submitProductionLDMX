@@ -1,0 +1,49 @@
+#!/bin/bash
+
+echo "********************************************************************"
+echo "*    Did you copy the updated version of wls to wlsProduction?    *"
+echo "********************************************************************"
+
+for length in "2000" "1800" "1600" "1400" "1200" "600"
+do
+  declare -a reflectors=("0")
+  if [ $length == "1800" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "1600" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "1400" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "1200" ]; then
+    reflectors[0]="2"
+  fi
+  if [ $length == "600" ]; then
+    reflectors[0]="2"
+  fi
+
+  for reflector in "${reflectors[@]}"
+  do
+
+    echo "Length "$length" Reflector "$reflector
+
+    mkdir /pnfs/mu2e/scratch/outstage/ehrlich/LDMXlookupTables/$length'_'$reflector
+
+    jobsub_submit \
+    -N $((1000*3)) \
+    -e LENGTH=$length \
+    -e REFLECTOR=$reflector \
+    --memory=500MB \
+    --disk=50MB \
+    --expected-lifetime=12h \
+    --resource-provides usage_model=OPPORTUNISTIC,DEDICATED,OFFSITE \
+    --group=mu2e \
+    --append_condor_requirements='(TARGET.HAS_SINGULARITY=?=true)' \
+    --lines '+SingularityImage=\"/cvmfs/singularity.opensciencegrid.org/fermilab/fnal-wn-sl7:latest\"' \
+    --lines '+FERMIHTC_AutoRelease=True' \
+    --lines '+FERMIHTC_GraceLifetime=14400' \
+    file:///mu2e/app/users/ehrlich/work_muse4/CRVStandalone/wls-build/wls.doProduction
+
+  done
+done

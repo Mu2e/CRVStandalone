@@ -34,10 +34,9 @@
 
 WLSSteppingAction* WLSSteppingAction::_fgInstance = NULL;
 
-WLSSteppingAction::WLSSteppingAction(simulationMode mode, const std::string &lookupFileName, const std::string &visibleEnergyAdjustmentFileName) : 
-                                                         _mode(mode), _engine(0), _randFlat(_engine), _randGaussQ(_engine), _randPoissonQ(_engine)
-                                                                                 //lookupFileName and visibleEnergyAdjustmentFileName
-                                                                                 //only used for simulationMode::UseGeantAndLookupTables
+WLSSteppingAction::WLSSteppingAction(simulationMode mode, const std::string &lookupFileName) : 
+                                     _mode(mode), _engine(0), _randFlat(_engine), _randGaussQ(_engine), _randPoissonQ(_engine)
+                                     //lookupFileName only used for simulationMode::UseGeantAndLookupTables
 {
   _fgInstance = this;
 
@@ -45,8 +44,7 @@ WLSSteppingAction::WLSSteppingAction(simulationMode mode, const std::string &loo
   if(_mode==UseGeantAndLookupTables)
   {
     _crvPhotons = std::unique_ptr<mu2eCrv::MakeCrvPhotons>(new mu2eCrv::MakeCrvPhotons(_randFlat, _randGaussQ, _randPoissonQ));
-    _crvPhotons->LoadLookupTable(lookupFileName);
-    _crvPhotons->LoadVisibleEnergyAdjustmentTable(visibleEnergyAdjustmentFileName);
+    _crvPhotons->LoadLookupTable(lookupFileName,1);
   }
 
 #ifdef PHOTONTEST
@@ -90,6 +88,10 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
       int trackID=theStep->GetTrack()->GetTrackID();
       int parentID=theStep->GetTrack()->GetParentID();
       _wlsTrackParents[trackID]=parentID;
+      if(_wlsTrackParents.find(parentID)==_wlsTrackParents.end()) _tracksGettingAbsorbedInFiber.insert(parentID);  //ignores photons whose parents were
+                                                                                                                   //also emitted in the fiber, i.e.
+                                                                                                                   //counts only "first absorptions"
+                                                                                                                   //in the fiber
     }
   }
 
@@ -97,6 +99,15 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
   G4VPhysicalVolume* thePostPV = theStep->GetPostStepPoint()->GetPhysicalVolume();
   if(thePostPV)
   {
+    //PDG code for optical photons changed from 0 to -22
+    if(theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()==-22)
+    {
+      std::string currentVolume=thePostPV->GetName();
+      std::string creationVolume=theStep->GetTrack()->GetLogicalVolumeAtVertex()->GetName();
+      int trackID=theStep->GetTrack()->GetTrackID();
+      if((currentVolume=="WLSFiber" || currentVolume.compare(0,4,"Clad")==0) && creationVolume=="Scintillator") _tracksHittingFiber.insert(trackID);
+    }
+    
 /*
     double trueStepLength=theStep->GetStepLength();
     double stepLength=(theStep->GetPreStepPoint()->GetPosition()-theStep->GetPostStepPoint()->GetPosition()).mag();
@@ -110,7 +121,8 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
 */
 
 /*
-//    if(theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()!=0)
+    //PDG code for optical photons changed from 0 to -22
+//    if(theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()!=-22)
     {
       std::cout<<theStep->GetTrack()->GetTrackID()<<"  "<<theStep->GetTrack()->GetParentID()<<"   ";
       std::cout<<theStep->GetTrack()->GetParticleDefinition()->GetParticleName()<<"   ";
@@ -128,7 +140,11 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
       }
       if(theStep->GetTrack()->GetCreatorProcess()!=NULL)
       {
-        std::cout<<theStep->GetTrack()->GetCreatorProcess()->GetProcessName();
+        std::cout<<theStep->GetTrack()->GetCreatorProcess()->GetProcessName()<<"  ";
+      }
+      if(theStep->GetTrack()->GetLogicalVolumeAtVertex()!=NULL)
+      {
+        std::cout<<theStep->GetTrack()->GetLogicalVolumeAtVertex()->GetName();
       }
       std::cout<<std::endl;
     }
@@ -136,7 +152,7 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
 
     if(theStatus==Detection)
     {
-         if(thePostPV->GetName()=="PhotonDet")
+         if(thePostPV->GetName()=="SiPM")
          {
 //std::cout<<"DETECTION  "<<thePostPV->GetCopyNo()<<std::endl;
            //a photon reached a SiPM
@@ -164,8 +180,8 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
              }
              else break;
            }
-           _fiberEmissions[thePostPV->GetCopyNo()].push_back(numberOfFiberEmissions);
-           _arrivalTimes[thePostPV->GetCopyNo()].push_back(theStep->GetPostStepPoint()->GetGlobalTime());
+           _photonInfo[thePostPV->GetCopyNo()].emplace_back(theStep->GetPostStepPoint()->GetGlobalTime(),numberOfFiberEmissions);
+           if(numberOfFiberEmissions==0) _zeroFiberEmissions++;
          }
     }
   }
@@ -180,8 +196,7 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
     int PDGcode = theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding();
     double beta = (theStep->GetPreStepPoint()->GetBeta() + theStep->GetPostStepPoint()->GetBeta())/2.0;
     double charge = theStep->GetTrack()->GetParticleDefinition()->GetPDGCharge();
-    double energyDepositedTotal= theStep->GetTotalEnergyDeposit();
-    double energyDepositedNonIonizing = theStep->GetNonIonizingEnergyDeposit();
+    double visibleEnergyDeposited = G4LossTableManager::Instance()->EmSaturation()->VisibleEnergyDepositionAtAStep(theStep);
     double trueStepLength = theStep->GetStepLength();  //may be longer than (p1-p2).mag() due to scattering
 
     static bool first=true;
@@ -197,14 +212,14 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
       _crvPhotons->SetScintillationYield(scintillationYield);
     }
 
-    if(PDGcode!=0)  //ignore optical photons
+    //PDG code for optical photons changed from 0 to -22
+    if(PDGcode!=-22)  //ignore optical photons
     {
      int reflector = WLSDetectorConstruction::Instance()->GetReflectorOption();
       _crvPhotons->MakePhotons(p1, p2, t1, t2,  
-                            PDGcode, beta, charge,
-                            energyDepositedTotal,
-                            energyDepositedNonIonizing,
-                            trueStepLength,0,reflector);
+                            beta, charge,
+                            visibleEnergyDeposited,
+                            trueStepLength,reflector);
  
       for(int SiPM=0; SiPM<4; SiPM++)
       {
@@ -213,14 +228,11 @@ void WLSSteppingAction::UserSteppingAction(const G4Step* theStep)
       }
     }
   }
-
-//  ShowVisibleEnergyTable(theStep);
-
 }
 
-const std::vector<double> &WLSSteppingAction::GetArrivalTimes(int SiPM)
+const std::vector<WLSSteppingAction::PhotonInfo> &WLSSteppingAction::GetPhotonInfo(int SiPM)
 {
-  return _arrivalTimes[SiPM];
+  return _photonInfo[SiPM];
 }
 
 const std::vector<double> &WLSSteppingAction::GetArrivalTimesFromLookupTables(int SiPM)
@@ -228,78 +240,25 @@ const std::vector<double> &WLSSteppingAction::GetArrivalTimesFromLookupTables(in
   return _arrivalTimesFromLookupTables[SiPM];
 }
 
-const std::vector<int> &WLSSteppingAction::GetFiberEmissions(int SiPM)
-{
-  return _fiberEmissions[SiPM];
-}
-
 void WLSSteppingAction::Reset()
 {
   for(int SiPM=0; SiPM<4; SiPM++)
   {
-    _arrivalTimes[SiPM].clear();
-    _arrivalTimes[SiPM].reserve(10000);
+    _photonInfo[SiPM].clear();
+    _photonInfo[SiPM].reserve(10000);
     _arrivalTimesFromLookupTables[SiPM].clear();
     _arrivalTimesFromLookupTables[SiPM].reserve(10000);
-    _fiberEmissions[SiPM].clear();
-    _fiberEmissions[SiPM].reserve(10000);
   }
 
   _wlsTrackParents.clear();
+  _tracksGettingAbsorbedInFiber.clear();
+  _tracksHittingFiber.clear();
+  _zeroFiberEmissions=0;
 }
 
-void WLSSteppingAction::ShowVisibleEnergyTable(const G4Step *theStep)
+void WLSSteppingAction::PrintFiberStats()
 {
-  if(theStep->GetTotalEnergyDeposit()==0) return;
-
-  G4Material* material = const_cast<G4Material*>(theStep->GetTrack()->GetMaterialCutsCouple()->GetMaterial());
-  double BirksConstant = material->GetIonisation()->GetBirksConstant();
-  std::cout<<material->GetName()<<"  Birks Constant: "<<BirksConstant<<std::endl;
-
-  std::cout<<"PDGcode: "<<theStep->GetTrack()->GetParticleDefinition()->GetPDGEncoding()<<std::endl;
-  std::cout<<"Original Energy Deposition (G4): "<<theStep->GetTotalEnergyDeposit()<<std::endl;
-  std::cout<<"Original Nonionizting Energy Deposition (G4): "<<theStep->GetNonIonizingEnergyDeposit()<<std::endl;
-  std::cout<<"Visible Energy Deposition (G4): "<<G4LossTableManager::Instance()->EmSaturation()->VisibleEnergyDepositionAtAStep(theStep)<<std::endl;
-  std::cout<<"Step Length: "<<theStep->GetStepLength()<<std::endl;
-  const G4ThreeVector &p1 = theStep->GetPreStepPoint()->GetPosition();
-  const G4ThreeVector &p2 = theStep->GetPostStepPoint()->GetPosition();
-  std::cout<<"             "<<(p1-p2).mag()<<std::endl;
-
-  std::cout<<"ELECTRON RANGE"<<std::endl;
-  for(double e=0.001*eV; e<1.0*TeV; e*=1.2)
-  {
-    std::cout<<material->GetName();
-    std::cout<<"  Energy: "<<e;
-    std::cout<<"  Range: "<<G4LossTableManager::Instance()->GetRange(G4Electron::Electron(), e, theStep->GetTrack()->GetMaterialCutsCouple());
-    std::cout<<"  Energy/Range: "<<e/G4LossTableManager::Instance()->GetRange(G4Electron::Electron(), e, theStep->GetTrack()->GetMaterialCutsCouple());
-    std::cout<<std::endl;
-  }
-
-  std::cout<<"PROTON RANGE"<<std::endl;
-  double ratio = 0;
-  double chargeSq = 0; 
-  double norm = 0.0;
-  const G4ElementVector* theElementVector = material->GetElementVector();
-  const double* theAtomNumDensityVector = material->GetVecNbOfAtomsPerVolume();
-  size_t nelm = material->GetNumberOfElements();
-  for(size_t i=0; i<nelm; ++i) 
-  {
-    const G4Element* elm = (*theElementVector)[i];
-    double Z = elm->GetZ();
-    double w = Z*Z*theAtomNumDensityVector[i];
-    ratio += w/G4NistManager::Instance()->GetAtomicMassAmu(G4int(Z));
-    chargeSq = Z*Z*w;
-    norm += w;
-  }
-  ratio *= CLHEP::proton_mass_c2/norm;
-  chargeSq /= norm;
-  for(double e=0.001*eV; e<1.0*TeV; e*=1.2)
-  {
-    std::cout<<material->GetName();
-    std::cout<<"  Energy: "<<e;
-    std::cout<<"  Range: "<<G4LossTableManager::Instance()->GetRange(G4Proton::Proton(), e*ratio, theStep->GetTrack()->GetMaterialCutsCouple());
-    std::cout<<"  Energy/(Range/chargeSq): "<<e/(G4LossTableManager::Instance()->GetRange(G4Proton::Proton(), e*ratio, theStep->GetTrack()->GetMaterialCutsCouple())/chargeSq);
-    std::cout<<std::endl;
-  }
+  std::cout<<"Full GEANT4:  Tracks hitting fiber: "<<_tracksHittingFiber.size()<<"    Tracks getting absorbed in fiber: "<<_tracksGettingAbsorbedInFiber.size();
+  std::cout<<"       Photons detected which have not been wavelength shifted in fiber: "<<_zeroFiberEmissions<<std::endl;
 }
 
